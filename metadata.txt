@@ -1,0 +1,9 @@
+[general]
+name=Suitability Score Calculator
+qgisMinimumVersion=3.22
+description=Calculates residential suitability scores across a grid for a chosen region
+version=0.1
+author=Your Name
+email=you@example.com
+category=Analysis
+experimental=True

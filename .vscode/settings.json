@@ -1,0 +1,8 @@
+{
+    "python.defaultInterpreterPath": "C:\\Program Files\\QGIS 3.44.10\\apps\\Python312\\python.exe",
+    "python.analysis.extraPaths": [
+        "C:\\Program Files\\QGIS 3.44.10\\apps\\qgis\\python",
+        "C:\\Program Files\\QGIS 3.44.10\\apps\\Python312\\Lib\\site-packages"
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:system"
+}
