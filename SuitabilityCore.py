@@ -2,6 +2,7 @@ from qgis.core import (
     QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
     QgsSpatialIndex, QgsField, QgsFeatureRequest,
     QgsGraduatedSymbolRenderer, QgsClassificationQuantile,
+    QgsStyle
 )
 from qgis.PyQt.QtCore import QVariant
 
@@ -159,7 +160,14 @@ def apply_weights_and_style(grid_layer, school_dist, supermarket_dist, lsoa_attr
     renderer = QgsGraduatedSymbolRenderer()
     renderer.setClassAttribute("suitability_score")
     renderer.setClassificationMethod(QgsClassificationQuantile())
-    renderer.updateClasses(grid_layer, 5)
+    renderer.updateClasses(grid_layer, 10)  # create the class ranges first
+
+    # Grab a built-in ramp from QGIS's style library by name
+    ramp = QgsStyle.defaultStyle().colorRamp("Reds")
+    renderer.updateColorRamp(ramp)
+
     grid_layer.setRenderer(renderer)
+    grid_layer.setOpacity(0.65)
+    grid_layer.triggerRepaint()
 
     return grid_layer
