@@ -7,29 +7,45 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 
-def generate_grid(extent, spacing, crs):
+def generate_grid(extent, spacing, crs, region_geometry=None):
     """
-    Create a point grid across the given extent, one point per cell.
-    NOTE: the memory-provider URI must say 'Point' (singular) — 'Points'
-    is not a recognized geometry type and silently produces a broken,
-    always-empty layer with no error raised.
+    Create a point grid across the given extent.
+
+    If region_geometry is provided, only points that fall within
+    the region boundary are added.
     """
-    layer = QgsVectorLayer(f"Point?crs={crs.authid()}", "grid", "memory")
+    layer = QgsVectorLayer(
+        f"Point?crs={crs.authid()}",
+        "grid",
+        "memory"
+    )
     provider = layer.dataProvider()
 
     features = []
+
     x = extent.xMinimum()
+
     while x < extent.xMaximum():
         y = extent.yMinimum()
+
         while y < extent.yMaximum():
-            feature = QgsFeature()
-            feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(x, y)))
-            features.append(feature)
+
+            point = QgsPointXY(x, y)
+            point_geometry = QgsGeometry.fromPointXY(point)
+
+            # Only add points inside the selected region
+            if region_geometry is None or region_geometry.contains(point_geometry):
+                feature = QgsFeature()
+                feature.setGeometry(point_geometry)
+                features.append(feature)
+
             y += spacing
+
         x += spacing
 
     provider.addFeatures(features)
     layer.updateExtents()
+
     return layer
 
 

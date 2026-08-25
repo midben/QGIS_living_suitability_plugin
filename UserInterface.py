@@ -1,11 +1,11 @@
 from qgis.PyQt.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox,
-    QPushButton, QMessageBox, QProgressBar
+    QPushButton, QMessageBox, QProgressBar, QComboBox
 )
 from qgis.gui import QgsMapToolExtent
 from qgis.core import QgsProject, QgsApplication, QgsCoordinateReferenceSystem, QgsCoordinateTransform
 
-from .BundledData import load_bundled_lsoa_layer
+from .BundledData import load_bundled_lsoa_layer, load_bundled_counties_layer
 from .SuitabilityTask import SuitabilityTask
 
 
@@ -44,9 +44,20 @@ class SuitabilityDialog(QDialog):
 
     def _build_region_section(self):
         self.extent_label = QLabel("No region selected yet")
+
         self.select_region_btn = QPushButton("Draw region on map")
         self.select_region_btn.clicked.connect(self.start_extent_selection)
         self.layout.addWidget(self.select_region_btn)
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Or select a county:"))
+        self.county_combo = QComboBox()
+        self.county_combo.addItem("— Select —")
+        self.county_combo.addItems(self._load_county_names())
+        self.county_combo.currentTextChanged.connect(self.on_county_selected)
+        row.addWidget(self.county_combo)
+        self.layout.addLayout(row)
+
         self.layout.addWidget(self.extent_label)
 
     def _build_weights_section(self):
@@ -118,6 +129,25 @@ class SuitabilityDialog(QDialog):
         )
         self.update_weight_total()
 
+    # ---------- County handling ----------
+
+    def _load_county_names(self):
+        layer = load_bundled_counties_layer()
+        return sorted(f["CTYUA25NM"] for f in layer.getFeatures())
+
+
+    def on_county_selected(self, county_name):
+        if county_name == "— Select —":
+            return
+        layer = load_bundled_counties_layer()
+        for feature in layer.getFeatures():
+            if feature["CTYUA25NM"] == county_name:
+                self.extent = feature.geometry().boundingBox()
+                self.region_geometry = feature.geometry()
+                self.extent_label.setText(f"Region: {county_name}")
+                self.update_weight_total()
+                return
+
     # ---------- Weight validation ----------
 
     def update_weight_total(self):
@@ -151,6 +181,7 @@ class SuitabilityDialog(QDialog):
             spacing=self.spacing_box.value(),
             lsoa_layer=lsoa_layer,
             weights=weights,
+            region_geometry=self.region_geometry,
             on_success=self._on_analysis_success,
             on_error=self._on_analysis_error,
         )

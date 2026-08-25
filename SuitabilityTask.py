@@ -20,12 +20,13 @@ class SuitabilityTask(QgsTask):
     touching Qt/QGIS objects from the wrong thread.
     """
 
-    def __init__(self, description, extent, spacing, lsoa_layer, weights, on_success, on_error):
+    def __init__(self, description, extent, spacing, lsoa_layer, weights, region_geometry, on_success, on_error):
         super().__init__(description, QgsTask.CanCancel)
         self.extent = extent
         self.spacing = spacing
         self.lsoa_layer = lsoa_layer
         self.weights = weights
+        self.region_geometry = region_geometry
         self.on_success = on_success  # callback(result_layer), run on main thread
         self.on_error = on_error      # callback(error_message), run on main thread
 
@@ -56,7 +57,7 @@ class SuitabilityTask(QgsTask):
         try:
             crs = self.lsoa_layer.crs()
 
-            grid_layer = generate_grid(self.extent, self.spacing, crs)
+            grid_layer = generate_grid(self.extent, self.spacing, crs, self.region_geometry)
 
             school_layer = elements_to_layer(self.school_elements, crs, "osm_school")
             supermarket_layer = elements_to_layer(self.supermarket_elements, crs, "osm_supermarket")
