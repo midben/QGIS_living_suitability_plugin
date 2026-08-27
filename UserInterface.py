@@ -10,18 +10,6 @@ from .SuitabilityTask import SuitabilityTask
 
 
 class SuitabilityDialog(QDialog):
-    """
-    The plugin's UI. Its only jobs are:
-      1. Let the user draw a region on the map
-      2. Let the user set weights that must sum to 100
-      3. Launch the analysis as a background task when Run is clicked
-
-    LSOA data is loaded automatically from the plugin's bundled GeoPackage
-    (see BundledData.py) — the user never has to name or select it.
-
-    Does NOT fetch OSM data or do any scoring math itself — that lives in
-    SuitabilityCore.py / Overpass.py / SuitabilityTask.py. This file is UI only.
-    """
 
     def __init__(self, iface):
         super().__init__()
@@ -39,8 +27,6 @@ class SuitabilityDialog(QDialog):
         self._build_run_section()
 
         self.setLayout(self.layout)
-
-    # ---------- UI construction ----------
 
     def _build_region_section(self):
         self.extent_label = QLabel("No region selected yet")
@@ -99,22 +85,12 @@ class SuitabilityDialog(QDialog):
         self.run_btn.clicked.connect(self.run_analysis)
         self.layout.addWidget(self.run_btn)
 
-    # ---------- Region drawing ----------
-
     def start_extent_selection(self):
         self.extent_tool = QgsMapToolExtent(self.canvas)
         self.extent_tool.extentChanged.connect(self.on_extent_selected)
         self.canvas.setMapTool(self.extent_tool)
 
     def on_extent_selected(self, rect):
-        """
-        Fires once the user finishes dragging a rectangle. The canvas is
-        typically in EPSG:3857 (Web Mercator, the default with an OSM
-        basemap), but the grid, Overpass query, and LSOA join all need the
-        extent in the LSOA layer's CRS (EPSG:27700, British National Grid).
-        Reproject here, once, so self.extent is always in the working CRS
-        no matter what CRS the canvas happens to be displaying in.
-        """
         canvas_crs = self.canvas.mapSettings().destinationCrs()
         target_crs = QgsCoordinateReferenceSystem("EPSG:27700")
 
@@ -128,8 +104,6 @@ class SuitabilityDialog(QDialog):
             f"to ({rect.xMaximum():.0f}, {rect.yMaximum():.0f})"
         )
         self.update_weight_total()
-
-    # ---------- County handling ----------
 
     def _load_county_names(self):
         layer = load_bundled_counties_layer()
@@ -148,21 +122,14 @@ class SuitabilityDialog(QDialog):
                 self.update_weight_total()
                 return
 
-    # ---------- Weight validation ----------
 
     def update_weight_total(self):
         total = sum(box.value() for box in self.weight_boxes.values())
         self.total_label.setText(f"Total: {total} / 100")
         self.run_btn.setEnabled(total == 100 and self.extent is not None)
 
-    # ---------- Running the analysis ----------
 
     def run_analysis(self):
-        """
-        Loads the bundled LSOA layer, collects the weights, and launches the
-        analysis as a background QgsTask so QGIS's UI thread stays responsive
-        during the Overpass fetch.
-        """
         try:
             lsoa_layer = load_bundled_lsoa_layer()
         except (FileNotFoundError, ValueError) as e:
@@ -190,14 +157,12 @@ class SuitabilityDialog(QDialog):
         QgsApplication.taskManager().addTask(self.task)
 
     def _on_analysis_success(self, result_layer):
-        """Runs on the main thread once the background task finishes successfully."""
         self.progress_bar.setVisible(False)
         self.run_btn.setEnabled(True)
         QgsProject.instance().addMapLayer(result_layer)
         QMessageBox.information(self, "Done", "Suitability layer added to the map.")
 
     def _on_analysis_error(self, error_message):
-        """Runs on the main thread if the background task failed."""
         self.progress_bar.setVisible(False)
         self.run_btn.setEnabled(True)
         QMessageBox.critical(self, "Analysis failed", error_message)

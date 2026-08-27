@@ -8,12 +8,6 @@ from qgis.PyQt.QtCore import QVariant
 
 
 def generate_grid(extent, spacing, crs, region_geometry=None):
-    """
-    Create a point grid across the given extent.
-
-    If region_geometry is provided, only points that fall within
-    the region boundary are added.
-    """
     layer = QgsVectorLayer(
         f"Point?crs={crs.authid()}",
         "grid",
@@ -50,7 +44,6 @@ def generate_grid(extent, spacing, crs, region_geometry=None):
 
 
 def nearest_distances(grid_layer, hub_layer):
-    """For each point in grid_layer, return distance (map units) to nearest feature in hub_layer."""
     if hub_layer.featureCount() == 0:
         return [None] * grid_layer.featureCount()
 
@@ -70,16 +63,6 @@ def nearest_distances(grid_layer, hub_layer):
 
 
 def join_lsoa_attributes(grid_layer, lsoa_layer, fields, extent=None):
-    """
-    For each grid point, find the LSOA polygon it falls inside and pull out
-    given field values.
-
-    extent: optional QgsRectangle to pre-filter lsoa_layer down to only the
-    features intersecting the study area before building the spatial index.
-    Without this, the entire bundled LSOA layer (tens of thousands of
-    polygons nationwide) gets indexed on every single run regardless of how
-    small the selected region is — slow enough to look like a freeze.
-    """
     if extent is not None:
         request = QgsFeatureRequest().setFilterRect(extent)
         candidate_features = list(lsoa_layer.getFeatures(request))
@@ -134,13 +117,6 @@ def normalize(values, invert=False):
 
 
 def apply_weights_and_style(grid_layer, school_dist, supermarket_dist, lsoa_attrs, weights):
-    """
-    Normalizes raw distance/attribute lists already computed against a grid
-    layer, writes the weighted score onto the layer, and applies graduated
-    styling. Kept separate from the fetch/distance steps so it can be called
-    from SuitabilityTask.finished() on the main thread, after the network
-    part of the work has already completed in the background.
-    """
     school_score = normalize(school_dist, invert=True)
     supermarket_score = normalize(supermarket_dist, invert=True)
     crime_score = normalize(lsoa_attrs["crime_count"], invert=True)

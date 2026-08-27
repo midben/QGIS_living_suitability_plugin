@@ -8,18 +8,6 @@ from .SuitabilityCore import (
 
 
 class SuitabilityTask(QgsTask):
-    """
-    run() executes on a background thread and does ONLY the Overpass network
-    requests — plain Python + `requests`, no QGIS vector layer objects —
-    since QgsVectorLayer is not safe to create or read from a non-main thread.
-
-    finished() is called back automatically by QGIS on the MAIN thread once
-    run() completes, and is where all the actual QGIS work happens: building
-    the grid, turning Overpass results into layers, spatial joins, scoring.
-    This keeps QGIS responsive during the slow network part without ever
-    touching Qt/QGIS objects from the wrong thread.
-    """
-
     def __init__(self, description, extent, spacing, lsoa_layer, weights, region_geometry, on_success, on_error):
         super().__init__(description, QgsTask.CanCancel)
         self.extent = extent
